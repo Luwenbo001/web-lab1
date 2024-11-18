@@ -37,3 +37,4 @@ tzdata=2024b=h04d1e81_0
 wheel=0.44.0=py39h06a4308_0
 xz=5.4.6=h5eee18b_1
 zlib=1.2.13=h5eee18b_1
+jieba
