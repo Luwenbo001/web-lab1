@@ -13,7 +13,7 @@ import csv
 
 input_train = "../../data/train_book_score.csv"
 input_test = "../../data/test_book_score.csv"
-output_value_path = "../../data/predicted_value.txt"
+output_value_path = "../../data/predicted_value_2000.txt"
 
 class item_comments():
     
@@ -102,7 +102,7 @@ def test_predict(comment_set : item_comments):
     with open(input_test, 'r', encoding='utf-8') as file:
         reader = csv.reader(file)
         for i, comment in enumerate(reader):
-            if (i > 100):
+            if (i > 2000):
                 break
             if i == 0:
                 continue
