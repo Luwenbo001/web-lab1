@@ -13,7 +13,7 @@ import csv
 
 input_train = "../../data/train_book_score.csv"
 input_test = "../../data/test_book_score.csv"
-output_path = "../../data/predicted_rank.txt"
+output_value_path = "../../data/predicted_value.txt"
 
 class item_comments():
     
@@ -21,8 +21,6 @@ class item_comments():
         self.data = data
         self.aver = {}
         for i, (item, comment) in enumerate(self.data.items()):
-            if i == 0:
-                continue
             item_sum = 0.0  #评分总和
             com_sum = 0     #评分总数
             for user, value in comment.items():
@@ -88,7 +86,9 @@ def import_data():
     data = {}
     with open(input_train, 'r', encoding='utf-8') as file:
         reader = csv.reader(file)
-        for comment in reader:
+        for i, comment in enumerate(reader):
+            if i == 0:
+                continue
             user = comment[0]
             item = comment[1]
             value = comment[2]
@@ -97,32 +97,19 @@ def import_data():
     # print(data)
     return data
     
-def test_predict(comment_set : item_comments):
-    user_comments = {}
-    for item, comments in comment_set.data.items():
-        for user, value in comments.items():
-            user_comment = user_comments.setdefault(user, {})
-            user_comment[item] = value
-            
+def test_predict(comment_set : item_comments): 
+    output_value_file = open(output_value_path, 'w', encoding='utf-8')
     with open(input_test, 'r', encoding='utf-8') as file:
         reader = csv.reader(file)
         for i, comment in enumerate(reader):
-            if (i > 2000):
+            if (i > 100):
                 break
             if i == 0:
                 continue
             user_ = comment[0]
             item_ = comment[1]
-            predict_value = comment_set.predict_rank(item_, user_)
-            user_comments[user][item_] = predict_value
-            print(user_, item_, predict_value)
-    
-    for user, comments in user_comments.items():
-        comments = sorted(comments.items(), key=lambda d: d[1], reverse=True)
-    
-    with open(output_path, 'r', encoding='utf-8') as output_file:
-        for user, comments in user_comments.items():
-            print(user, comments, file=output_file)
+            origin_value = comment[2]
+            print((user_, item_, origin_value, comment_set.predict_rank(item_, user_)), file=output_value_file)
             
 def main():
     data = import_data()
