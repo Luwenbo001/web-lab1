@@ -62,7 +62,7 @@ class item_comments():
             if (comment[user] != -1):
                 p_s = self.pearson_sim(item, item_)
                 numerator += p_s * comment[user]
-                denomintor += comment[user]
+                denomintor += p_s
         
         if denomintor == 0:
             return -1   #unpredictable

@@ -1,4 +1,6 @@
 import csv
+import word_compress_store_single_str
+import word_compress_store_block
 
 inverted_index = {}
 # wordssum = ""
@@ -94,6 +96,8 @@ def main():
     for i in range(4):
         process_csv(input[i])
         write_index_normal(output[i])
+        word_compress_store_single_str.write_index_single_str(output[i], inverted_index)
+        word_compress_store_block.write_index_block(output[i], inverted_index)
         inverted_index = {}
 
 if __name__ == "__main__":
