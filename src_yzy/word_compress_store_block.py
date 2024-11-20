@@ -29,7 +29,7 @@ def write_index_block(file_path, inverted_index):  #需要分开存储词典和�
     dict_pt += len(total_str.encode())
     file1.seek(dict_pt)
     for index,(key, value) in enumerate(inverted_index):
-        if(index % 5 == 4):
+        if(index % 5 == 0):
             file1.write(str_pt.to_bytes(4)) #写入词项在整个字符串中的指针
             dict_pt += 4
             file1.seek(dict_pt)

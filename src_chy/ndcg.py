@@ -49,7 +49,7 @@ with open('data/predicted_rank_plus.txt', 'r') as file:
             # 读取第三列和第四列（索引从0开始，所以第三列是索引2，第四列是索引3）
             third_column = parts[3].strip()  # strip() 用于去除可能存在的空格
             fourth_column = parts[4].strip()
-            predicted_scores_df.append(fourth_column[1:-1])
+            predicted_scores_df.append(fourth_column)
             actual_scores_df.append(int(third_column[1:-1]))
         
 

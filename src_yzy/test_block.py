@@ -31,7 +31,7 @@ def process(i):
     word_index = 0
     str_ptr = 0
     while (dict_ptr < len(dict_data)):
-        if word_index % 5 == 4:
+        if word_index % 5 == 0:
             str_ptr = int.from_bytes(dict_data[dict_ptr : dict_ptr + 4])
             dict_ptr += 4
         word_len = int.from_bytes(dict_data[dict_ptr : dict_ptr + 1])

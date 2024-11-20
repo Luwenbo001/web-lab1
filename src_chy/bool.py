@@ -7,28 +7,58 @@ from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import ndcg_score
+import time
+start_time = time.time()
 input = ["../data/index/selected_book_top_1200_data_tag_tokenized_jieba",
 "../data/index/selected_book_top_1200_data_tag_tokenized_pkuseg",
 "../data/index/selected_movie_top_1200_data_tag_tokenized_jieba",
 "../data/index/selected_movie_top_1200_data_tag_tokenized_pkuseg"]
+
 def getList(word):
     for i in range(4):
-        file_dict = open(input[i] + "_basic_store_dict.binery", "rb")
-        file_index = open(input[i] + "_basic_store_index.binery", "rb")
+        file_dict = open(input[i] + "_basic_store_dict.binery_block", "rb")
+        file_index = open(input[i] + "_basic_store_index.binery_block", "rb")
         dict_data = file_dict.read()
         index_data = file_index.read()
         dict_ptr = 0
-        while (dict_ptr < len(dict_data)):
-            word_ = (dict_data[dict_ptr : dict_ptr + 88].rstrip(b'\x00')).decode('utf-8')
-            freq = int.from_bytes(dict_data[dict_ptr + 88 : dict_ptr + 92])
-            index_ptr = int.from_bytes(dict_data[dict_ptr + 92 : dict_ptr + 96])
-            dict_ptr += 96
-            if (word_ == word):
-                index = []
-                for i in range(0, freq):
-                    index.append(int.from_bytes(index_data[index_ptr : index_ptr + 4]))
-                    index_ptr += 4
-                return index
+        str_len = int.from_bytes(dict_data[dict_ptr : dict_ptr + 4])
+        dict_ptr += 4
+        total_str = dict_data[dict_ptr : dict_ptr + str_len].decode()
+        dict_ptr += str_len
+        left = 0
+        right =int( (len(dict_data)-left)//49 )
+        while (left < right):
+            mid = (left + right) // 2
+            print(mid)
+            print(left)
+            print(right)
+            str_ptr = int.from_bytes(dict_data[dict_ptr + mid * 49 : dict_ptr + mid * 49 + 4])
+            str_len1 = int.from_bytes(dict_data[dict_ptr + mid * 49 + 4 : dict_ptr + mid * 49 + 5])
+            word1_ = total_str[str_ptr : str_ptr + str_len1]
+            mid1= mid+1
+            str_ptr = int.from_bytes(dict_data[dict_ptr + mid1 * 49 : dict_ptr + mid1 * 49 + 4])
+            str_len1 = int.from_bytes(dict_data[dict_ptr + mid1 * 49 + 4 : dict_ptr + mid1 * 49 + 5])
+            word2_ = total_str[str_ptr : str_ptr + str_len1]
+            if (word1_ <= word < word2_):
+                k = 0
+                for i in range(5):
+                    str_ptr = int.from_bytes(dict_data[dict_ptr + mid * 49 : dict_ptr + mid * 49 + 4])
+                    str_len = int.from_bytes(dict_data[dict_ptr + mid * 49 + 9*i + 4 : dict_ptr + mid * 49 + 9*i + 5])
+                    
+                    word0_ = total_str[str_ptr +k: str_ptr + k+ str_len]
+                    k += str_len
+                    if (word0_ == word):
+                        freq = int.from_bytes(dict_data[dict_ptr + mid * 49 + 9*i + 5 : dict_ptr + mid * 49 + 9*i + 9])
+                        index_ptr = int.from_bytes(dict_data[dict_ptr + mid * 49 + 9*i + 9 : dict_ptr + mid * 49 + 9*i + 13])
+                        index = []
+                        for i in range(0, freq):
+                            index.append(int.from_bytes(index_data[index_ptr : index_ptr + 4]))
+                            index_ptr += 4
+                        return index
+            elif (word2_ <= word):#当中值小于目标值 说明应该在右边查找了
+                left = mid + 1 #把左索引 变成mid+1
+            else:#当中值大于目标值 说明应该在左边查找了
+                right = mid - 1 #把右索引 变成mid-1
         # j = 0
         # with open(input[i], 'r', encoding='gbk', errors='ignore') as file:
         #     for line in file:
@@ -102,7 +132,11 @@ def AndNot(list1, list2):
     if i != len(list1):
         res.extend(list1[i:])
     return res
+#print('美丽 AND 鲨鱼 AND 中文 AND 村上:', And(getList('鲨鱼'),And(getList('村上'),And(getList('中文'), getList('美丽')))))
+#print('! AND !!:', And(getList('!'), getList('!!')))
+#print('(! AND !!)OR(2 AND 1 ):', Or(And(getList('!'), getList('!!')),And(getList('2'), getList('1'))))
+print('(中文 OR 人生)ANDNOT(信息 AND 作业):', AndNot(Or((getList('中文')), getList('人生')),And(getList('信息'), getList('作业'))))
+end_time = time.time()
+running_time = end_time-start_time
 
-print('! AND !!:', And(getList('!'), getList('!!')))
-print('(! AND !!)OR(. AND ( ):', Or(And(getList('!'), getList('!!')),And(getList('.'), getList('('))))
-print('(123 OR 信息)AND NOT(每天 AND 作业):', AndNot(Or((getList('123')), getList('信息')),And(getList('每天'), getList('作业'))))
+print('程序运行时间：', running_time, '秒')
