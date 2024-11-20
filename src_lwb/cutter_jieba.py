@@ -1,5 +1,6 @@
 import csv
 import jieba
+import time
 book_data_path = "../data/selected_book_top_1200_data_tag.csv"
 movie_data_path = "../data/selected_movie_top_1200_data_tag.csv"
 
@@ -14,6 +15,9 @@ movie_content = []
 book_output_path = "../data/selected_book_top_1200_data_tag_tokenized_jieba.csv"
 movie_output_path = "../data/selected_movie_top_1200_data_tag_tokenized_jieba.csv"
 
+bad_list = [' ','【','】','[',']','-','+','/','、','，','。','：','；','“','”','《','》','？','！','@','#','$','%','^','&','*','(',')','_','+','=','{','}','|','\\',';',':','\'','"','<','>','/','?','~','`','的','吗','里','还','行','而','覺得','片','这个','我','个','.','（','）','和','是','有','在','对','了','就','也','／','’','‘']
+
+T1 = time.time()
 for i,member in enumerate(book_reader):
     if(i==0): continue
     is_pair = 0
@@ -37,16 +41,25 @@ for i,member in enumerate(book_reader):
     for word in words:
         tokens = ','.join(jieba.cut(word, HMM=True))
         for token in tokens.split(','):
-            book_output_row += "'" + token + "'" + ","
+            f = 0
+            for bad in bad_list:
+                if(token == bad):
+                    f = 1
+                    break
+            if(f == 0): 
+                book_output_row += "'" + token + "'" + ","
     book_output_row += "}" + '"' + "\n"
     book_content.append(book_output_row)
+
+T2 = time.time()
+print("jieba book time: ", T2-T1)
 
 with open(book_output_path, 'w') as f:
     f.write(book_column + "\n")
     f.writelines(book_content)
 
 
-
+T1 = time.time()
 for i,member in enumerate(movie_reader):
     if(i==0): continue
     is_pair = 0
@@ -70,10 +83,18 @@ for i,member in enumerate(movie_reader):
     for word in words:
         tokens = ','.join(jieba.cut(word, HMM=True))
         for token in tokens.split(','):
-            movie_output_row += "'" + token + "'" + ","
+            f = 0
+            for bad in bad_list:
+                if(token == bad):
+                    f = 1
+                    break
+            if(f == 0): 
+                movie_output_row += "'" + token + "'" + ","
     movie_output_row += "}" + '"' + "\n"
     movie_content.append(movie_output_row)
 
+T2 = time.time()
+print("jieba movie time: ", T2-T1)
 with open(movie_output_path, 'w') as f:
     f.write(movie_column + "\n")
     f.writelines(movie_content)
