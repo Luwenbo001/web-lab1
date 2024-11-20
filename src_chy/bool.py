@@ -1,51 +1,43 @@
 import csv
-
-inverted_index = {}
-# wordssum = ""
-input = ["../data/selected_book_top_1200_data_tag_tokenized_jieba.csv",
-"../data/selected_book_top_1200_data_tag_tokenized_pkuseg.csv",
-"../data/selected_movie_top_1200_data_tag_tokenized_jieba.csv",
-"../data/selected_movie_top_1200_data_tag_tokenized_pkuseg.csv"]
-input_test = "../data/test.csv"
-output = ["../data/index/selected_book_top_1200_data_tag_tokenized_jieba",
-"../data/index/selected_book_top_1200_data_tag_tokenized_pkuseg",
-"../data/index/selected_movie_top_1200_data_tag_tokenized_jieba",
-"../data/index/selected_movie_top_1200_data_tag_tokenized_pkuseg"]
-
-def process_csv(file_path):
-    global inverted_index
-    with open(file_path, 'r', encoding='utf-8') as file:
-        reader = csv.reader(file)
-        for i,text in enumerate(reader):
-            insert_line(i, text)
-            
-    for key, value in inverted_index.items():
-        value.sort()    #对字典中的每一个列表进行排序
+import numpy as np
+import pandas as pd
+from torch import nn
+from tqdm import tqdm
+from torch.utils.data import Dataset
+from torch.utils.data import DataLoader
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import ndcg_score
+input = ["data/index/testread/selected_book_top_1200_data_tag_tokenized_jieba_dict.txt",
+"data/index/testread/selected_book_top_1200_data_tag_tokenized_pkuseg_dict.txt",
+"data/index/testread/selected_movie_top_1200_data_tag_tokenized_jieba_dict.txt",
+"data/index/testread/selected_movie_top_1200_data_tag_tokenized_pkuseg_dict.txt",
+"data/index/testread/selected_book_top_1200_data_tag_tokenized_jieba_index.txt",
+"data/index/testread/selected_book_top_1200_data_tag_tokenized_pkuseg_index.txt",
+"data/index/testread/selected_movie_top_1200_data_tag_tokenized_jieba_index.txt",
+"data/index/testread/selected_movie_top_1200_data_tag_tokenized_pkuseg_index.txt",]
+def getList(word):
+    prefixes = []
+    linetext = []
+    for i in range(4):
+        j = 0
+        with open(input[i], 'r', encoding='gbk', errors='ignore') as file:
+            for line in file:
+                j+=1# 去除每行末尾的换行符（如果有的话）
+                line = line.rstrip()
+                prefix = line.split()[0]
+                if (word == prefix):
+                    k=0
+                    with open(input[i+4], 'r', encoding='gbk', errors='ignore') as file1:
+                        for line in file1:
+                            k+=1
+                            line = line.rstrip()
+                            if (j == k) :
+                                cleaned_text = line[1:-1]
+                                real_array = cleaned_text.split(',')
+                                real_array = [int(x) for x in real_array]
+                                return real_array
         
-    inverted_index = sorted(inverted_index.items(), key=lambda d:d[0]) 
-
-def insert_line(i, textline):
-    global inverted_index
-    if i == 0:
-        return
     
-    index = int(textline[0])    #book id
-    words = []                  #tags
-    is_pair = 0
-    str = ""
-
-    for ch in textline[1]:
-        if((ch == "," or ch == '}')and is_pair == 1): 
-            is_pair = 0
-            words.append(str[:-1])
-            str = ""
-            continue
-        if(is_pair == 1):
-            str += ch
-        if(ch == "'" and is_pair == 0): is_pair = 1
-    for word in words:
-        set = inverted_index.setdefault(word, [])   #不使用三步走，直接使用字典+列表
-        set.append(index)
 def And(list1, list2):
     i, j = 0, 0
     res = []
@@ -100,4 +92,6 @@ def AndNot(list1, list2):
     if i != len(list1):
         res.extend(list1[i:])
     return res
+
+print('! AND !!:', And(getList('!'), getList('!!')))
 
