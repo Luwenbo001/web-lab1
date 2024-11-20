@@ -10,6 +10,7 @@
 Jieba 分词基于 词典+HMM（隐马尔科夫模型） 的统计方法，使用双向最大匹配（Bi-MM）来匹配词典中的词语。HMM模型用于处理未登录词（未出现在词典中的词），通过字词的状态转移概率来预测分词边界。(本次实验中我们并未使用jieba分词的paddle模式，即使用paddle深度学习框架，我们也没能使用jieba分词的自定义字典)
 PKUSeg 分词基于条件随机场（CRF）或深度学习模型的序列标注方法。使用大规模标注语料训练词边界的概率分布，通过全局最优来预测分词结果。
 ![](./Report_img/2.png)
+
 1. 性能对比
 准确性: PKUSeg 在复杂场景和领域适配上表现优异，因为其模型能捕捉上下文和细粒度语义。
 速度: Jieba 因为算法简单，分词速度更快，适合大规模实时处理任务。
@@ -29,7 +30,99 @@ PKUSeg 分词基于条件随机场（CRF）或深度学习模型的序列标注�
 
 （上述生成倒排索引表和词典文件的方法在"web-lab1\src_yzy\inverted_index_gen.py"中，采用基本顺序存储的读取方法测试（从二进制文件还原倒排索引表）包含在"web-lab1\src_yzy\test_basic.py"中）
 
+具体建立倒排索引表的过程如下(in web-lab1\src_yzy\inverted_index_gen.py)：
 
+```python
+def insert_line(i, textline):
+    global inverted_index
+    if i == 0:
+        return
+    
+    index = int(textline[0])    #book id
+    words = []                  #tags
+    is_pair = 0
+    str = ""
+
+    for ch in textline[1]:
+        if((ch == "," or ch == '}')and is_pair == 1): 
+            is_pair = 0
+            words.append(str[:-1])
+            str = ""
+            continue
+        if(is_pair == 1):
+            str += ch
+        if(ch == "'" and is_pair == 0): is_pair = 1
+    for word in words:
+        set = inverted_index.setdefault(word, [])   #不使用三步走，直接使用字典+列表
+        set.append(index)
+```
+
+用于处理一行对应的记录。
+
+基础的顺序存储实现如下(in web-lab1\src_yzy\inverted_index_gen.py)(去除了编写时的一些测试项)：
+
+```python
+def write_index_normal(file_path):  #需要分开存储词典和倒排表项
+    global inverted_index
+    #测试得到最长词项为85字节，于是取88字节存储词项
+    dict_pt = 0
+    index_pt = 0
+    file1 = open(file_path + "_basic_store_dict.binery", "wb")
+    file2 = open(file_path + "_basic_store_index.binery", "wb")
+    for index,(key, value) in enumerate(inverted_index):
+        word = key.encode() + (88 - len(key.encode())) * b'\x00'
+        file1.write(word)
+        dict_pt += 88
+        file1.seek(dict_pt)
+        file1.write(len(value).to_bytes(4))
+        dict_pt += 4
+        file1.seek(dict_pt)
+        file1.write(index_pt.to_bytes(4))
+        dict_pt += 4
+        file1.seek(dict_pt)
+        for id in value:
+            file2.write(id.to_bytes(4))
+            index_pt += 4
+            file2.seek(index_pt)
+    return    
+```
+
+与之对应的，从二进制文件中还原的过程如下(in web-lab1\src_yzy\test_basic.py)：
+
+```python
+input = ["../data/index/selected_book_top_1200_data_tag_tokenized_jieba",
+"../data/index/selected_book_top_1200_data_tag_tokenized_pkuseg",
+"../data/index/selected_movie_top_1200_data_tag_tokenized_jieba",
+"../data/index/selected_movie_top_1200_data_tag_tokenized_pkuseg"]
+output = ["../data/index/testread/selected_book_top_1200_data_tag_tokenized_jieba",
+"../data/index/testread/selected_book_top_1200_data_tag_tokenized_pkuseg",
+"../data/index/testread/selected_movie_top_1200_data_tag_tokenized_jieba",
+"../data/index/testread/selected_movie_top_1200_data_tag_tokenized_pkuseg"]
+
+def process(i):
+    file_dict = open(input[i] + "_basic_store_dict.binery", "rb")
+    file_index = open(input[i] + "_basic_store_index.binery", "rb")
+    file_dict_out = open(output[i] + "_dict.txt", "w", encoding="utf-8")
+    file_index_out = open(output[i] + "_index.txt", "w", encoding="utf-8")
+
+    dict_data = file_dict.read()
+    index_data = file_index.read()
+
+    dict_ptr = 0
+    index_ptr = 0
+    print(len(dict_data))
+    while (dict_ptr < len(dict_data)):
+        word = (dict_data[dict_ptr : dict_ptr + 88].rstrip(b'\x00')).decode('utf-8')
+        freq = int.from_bytes(dict_data[dict_ptr + 88 : dict_ptr + 92])
+        pindex = int.from_bytes(dict_data[dict_ptr + 92 : dict_ptr + 96])
+        dict_ptr += 96
+        print(word, freq, pindex, file=file_dict_out)
+        index = []
+        for i in range(0, freq):
+            index.append(int.from_bytes(index_data[index_ptr : index_ptr + 4]))
+            index_ptr += 4
+        print(index, file=file_index_out)
+```
 
 实际上除了个别长词之外，一般的词项远远达不到88字节，我们考虑对词典文件进行压缩。除去基本存储方法以以外，试图采用单一字符串词典以及按块存储方法，并比较这三种方法的空间占用以及检索效率。
 
@@ -101,5 +194,17 @@ PKUSeg 分词基于条件随机场（CRF）或深度学习模型的序列标注�
 #### Section 3 
 ### Part 2
 #### Section 1 
-#### Section 2
+#### Section 2 基本协同过滤—基于项目
+
+我们采取基于项目的基本协同过滤方式，预测用户对项目的评分。
+
+选择基于项目而不是基于用户的推荐，是考虑到各类用户的偏好不同，而项目的属性较为单一，评分的标准相较于各人的喜好也更为一般化。基于项目的推荐相较于基于用户的推荐一般会更好。
+
+基于项目推荐的计算公式如下：
+$$r_{ix} = \frac{\Sigma_j \epsilon N(i;x) s_{ij}·r_{jx}}{\Sigma S_{ij}}$$
+
+其中，$$s_{ij}$$代表i、j项目的相似程度，在此我们使用简单的$$Pearson$$相关系数表示，使用基于同一用户进行的评分进行衡量。具体来说，就是对于i、j项目，构造两个向量，每一维代表某一个用户对该项目的评分，而两个向量的同一维来自于同一个用户的评价。
+
+$$r_{jx}$$则代表x用户对j项目的评分
+
 #### Section 3 协同过滤进阶
