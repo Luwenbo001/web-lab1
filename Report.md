@@ -198,6 +198,8 @@ def process(i):
 
 我们采取基于项目的基本协同过滤方式，预测用户对项目的评分。
 
+（web-lab1\src_yzy\phase2\item_based_CF(basic).py）
+
 选择基于项目而不是基于用户的推荐，是考虑到各类用户的偏好不同，而项目的属性较为单一，评分的标准相较于各人的喜好也更为一般化。基于项目的推荐相较于基于用户的推荐一般会更好。
 
 基于项目推荐的计算公式如下：
@@ -205,6 +207,81 @@ $$r_{ix} = \frac{\Sigma_j \epsilon N(i;x) s_{ij}·r_{jx}}{\Sigma S_{ij}}$$
 
 其中，$$s_{ij}$$代表i、j项目的相似程度，在此我们使用简单的$$Pearson$$相关系数表示，使用基于同一用户进行的评分进行衡量。具体来说，就是对于i、j项目，构造两个向量，每一维代表某一个用户对该项目的评分，而两个向量的同一维来自于同一个用户的评价。
 
-$$r_{jx}$$则代表x用户对j项目的评分
+$$r_{jx}$$则代表x用户对j项目的评分。
+
+基于上一阶段中划分出的train_data计算test_data相似度和预测值,再对结果（顺序）进行比较。
+
+所有的计算及预测过程包含在类$$item\_comments$$中：
+
+```python
+class item_comments():
+    
+    def __init__(self, data):
+        self.data = data
+        self.aver = {}
+        for i, (item, comment) in enumerate(self.data.items()):
+            item_sum = 0.0  #评分总和
+            com_sum = 0     #评分总数
+            for user, value in comment.items():
+                if (int(value) > -1):
+                    item_sum += int(value)
+                    com_sum += 1
+            self.aver[item] = item_sum / com_sum
+    
+    def get_comment(self, item1):
+        for item, comment in self.data.items():
+            if item == item1:
+                return comment
+        return -1   #not found
+        
+    def pearson_sim(self, item1, item2):
+        comment1 = self.get_comment(item1)
+        aver1 = self.aver[item1]
+        comment2 = self.get_comment(item2)
+        aver2 = self.aver[item2]
+        
+        c = 0.0 #协方差
+        v1 = 0.0
+        v2 = 0.0    #标准差
+        for item, value in comment1.items():
+            for item_, value_ in comment2.items():
+                if item == item_ and int(value) != -1 and int(value_) != -1 :
+                    c += (float(value) - aver1) * (float(value_) - aver2)
+                    v1 += pow((float(value) - aver1), 2)
+                    v2 += pow((float(value_) - aver2), 2)
+        v1 = pow(v1, 0.5)
+        v2 = pow(v2, 0.5)
+        
+        if v1 == 0.0 or v2 == 0.0:  #没有相关项
+            return 0
+        else:
+            return c / (v1 * v2)
+        
+    def predict_rank(self, item, user):
+        numerator = 0.0     #分子
+        denomintor = 0.0    #分母
+        for item_, comment in self.data.items():
+            if (item == item_):
+                continue
+            if (user in comment):
+                p_s = self.pearson_sim(item, item_)
+                numerator += p_s * float(comment[user])
+                denomintor += p_s
+        
+        if denomintor == 0:
+            return -1   #unpredictable
+        else:
+            return numerator/denomintor
+    
+    def solution(self):
+        ret_data = self.data
+        for item, comment in self.data.items():
+            for user, value in comment.items():
+                if int(value) == -1:
+                    ret_data[item].second[user] = self.predict_rank(item, user)
+        return ret_data
+```
+
+基本的文件处理不过多赘述。需要注意的是基于项目的推荐评分耗费大量的计算（在测试过程中，发现每一（用户、项目）的预测计算时间是秒级别的，于是取前2000个作为总体，参与推荐结果分析（100、2000的预测结果都存放在data文件夹当中））
 
 #### Section 3 协同过滤进阶
