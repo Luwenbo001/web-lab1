@@ -81,7 +81,7 @@ class BookRatingDataset(Dataset):
 		return len(self.data)
 	
 # 划分训练集和测试集
-train_data, test_data = train_test_split(loaded_data, test_size=0.5, random_state=42)
+train_data, test_data = train_test_split(loaded_data, test_size=0.3, random_state=42)
 
 # 创建训练集和测试集的数据集对象
 train_dataset = BookRatingDataset(train_data, user_to_idx, book_to_idx, u_items_list,  i_users_list)
