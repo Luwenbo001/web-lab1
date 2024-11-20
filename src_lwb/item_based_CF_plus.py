@@ -137,12 +137,9 @@ def import_data():
     return data
     
 def test_predict(comment_set : item_comments):
-    user_comments = {}
-    for item, comments in comment_set.data.items():
-        for user, value in comments.items():
-            user_comment = user_comments.setdefault(user, {})
-            user_comment[item] = value
-            
+
+    output_file = open(output_path, 'w', encoding='utf-8')
+
     with open(input_test, 'r', encoding='utf-8') as file:
         reader = csv.reader(file)
         for i, comment in enumerate(reader):
@@ -152,16 +149,9 @@ def test_predict(comment_set : item_comments):
                 continue
             user_ = comment[0]
             item_ = comment[1]
+            origin_value = comment[2]
             predict_value = comment_set.predict_rank(item_, user_)
-            user_comments[user][item_] = predict_value
-            print(user_, item_, predict_value)
-    
-    for user, comments in user_comments.items():
-        comments = sorted(comments.items(), reverse=True)
-    
-    with open(output_path, 'w', encoding='utf-8') as output_file:
-        for user, comments in user_comments.items():
-            print(user, comments, file=output_file)
+            print((user_, item_, origin_value,predict_value), file=output_file)
             
 def main():
     init(book_split_word_pkuseg_path)
