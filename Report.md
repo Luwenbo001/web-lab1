@@ -211,7 +211,7 @@ $$r_{jx}$$则代表x用户对j项目的评分。
 
 基于上一阶段中划分出的train_data计算test_data相似度和预测值,再对结果（顺序）进行比较。
 
-所有的计算及预测过程包含在类$$item\_comments$$中：
+所有的计算及预测方法包含在类$$item\_comments$$中：
 
 ```python
 class item_comments():
